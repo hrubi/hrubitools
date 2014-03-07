@@ -12,16 +12,22 @@ usage: $PROG_NAME [-h]              # help
                   [-d]              # download
                   [-g]              # init git and add git files
                   [-w]              # sync audiofiles too
+                  [-X]              # delete audiofiles on remote
 
 
 workflow:
-  1. Create ardour session
-  2. Set REMOTE_USER and REMOTE_HOST in ~/.ardoursync.cfg or
-     \$session/ardoursync.cfg
-  3. cd to \$session
-  4. Run ardoursync -guw (init and push all files)
-  5. Upload: ardoursync -u (optionally -w for audio files)
-  6. Download: ardoursync -d (optionally -w for audio files)
+  initial:
+    * Create ardour session
+    * Set REMOTE_USER and REMOTE_HOST in ~/.ardoursync.cfg or
+      \$session/ardoursync.cfg
+    * cd to \$session
+    * Run $PROG_NAME -guw (init and push all files)
+
+  subsequent:
+    * Upload: $PROG_NAME -u (optionally -w for audio files)
+    * Download: $PROG_NAME -d (optionally -w for audio files)
+    * Delete audiofiles: $PROG_NAME -X
+
 EOF
 }
 
@@ -74,8 +80,7 @@ pull_audio_files() {
 }
 
 delete_files() {
-    1>&2 echo "Deleting files is not implemented"
-    exit 1
+    ssh $REMOTE_USER@$REMOTE_HOST 'rm -rf "'${REMOTE_DIR}$interchange_dir'"'
 }
 
 is_git() {
@@ -166,7 +171,8 @@ if [ $gitinit = 1 ]; then
     git_init
     git_add_files
     git commit -m"Nova session $session_name"
-    ssh $REMOTE_USER@$REMOTE_HOST 'mkdir -p "'${REMOTE_DIR}${session_name}'" && git --git-dir="'${REMOTE_DIR}${session_name}/.git'" init --bare'
+    ssh $REMOTE_USER@$REMOTE_HOST \
+        'mkdir -p "'${REMOTE_DIR}${session_name}'" && git --git-dir="'${REMOTE_DIR}${session_name}/.git'" init --bare'
 fi
 
 if [ $upload = 1 ]; then
