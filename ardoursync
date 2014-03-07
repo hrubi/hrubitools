@@ -1,0 +1,178 @@
+#!/bin/sh
+
+PROG_NAME="$(basename $0)"
+
+usage() {
+    cat <<-EOF
+usage: $PROG_NAME [-h]              # help
+                  [-s session]      # session directory
+                  [-u]              # upload
+                  [-d]              # download
+                  [-X]              # delete
+                  [-g]              # init git and add git files
+                  [-w]              # sync audiofiles too
+EOF
+}
+
+parse_opts() {
+    while getopts hs:udXgw flag; do
+        case $flag in
+            h)
+                usage
+                exit 0
+                ;;
+            s)
+                session="$OPTARG"
+                ;;
+            u)
+                upload=1
+                ;;
+            d)
+                download=1
+                ;;
+            X)
+                delete=1
+                ;;
+            g)
+                gitinit=1
+                ;;
+            w)
+                syncaudiofiles=1
+                ;;
+            ?)
+                exit 1
+                ;;
+        esac
+    done
+}
+
+push_audio_files() {
+    pushd "$session/.."
+    "$rsync" $rsync_opts --relative \
+        $interchange_dir \
+        $REMOTE_USER@$REMOTE_HOST:${REMOTE_DIR}
+    popd
+}
+
+pull_audio_files() {
+    pushd "$session/.."
+    "$rsync" $rsync_opts \
+        $REMOTE_USER@$REMOTE_HOST:${REMOTE_DIR}./$interchange_dir \
+        .
+    popd
+}
+
+delete_files() {
+    1>&2 echo "Deleting files is not implemented"
+    exit 1
+}
+
+is_git() {
+    git status >/dev/null 2>&1
+}
+
+git_init() {
+    git init
+    cat > .gitignore <<-EOF
+*.bak
+*.pending
+peaks
+interchange
+dead
+export
+EOF
+    git remote add origin "$REMOTE_USER@$REMOTE_HOST:${REMOTE_DIR}${session_name}/.git"
+}
+
+git_add_files() {
+    files=".gitignore ardoursync.cfg *.ardour *.history instant.xml plugins"
+    git add $files
+}
+
+
+######
+# Main
+
+upload=0
+download=0
+delete=0
+gitinit=0
+parse_opts "$@"
+
+# set/check session vars
+if [ -z "$session" ]; then
+    session=$PWD
+fi
+session=$(readlink -f "$session")
+session_name=$(basename "$session")
+
+if [ $(($download + $upload + $delete)) -ne 1 -a "$gitinit" = 0 ];then
+    1>&2 echo "Specify excatly one action"
+    exit 1
+fi
+
+if [ $download = 1 -a $gitinit = 1 ]; then
+    1>&2 echo "Can't init git and download"
+    exit 1
+fi
+
+
+# configuration
+config_file_global="$HOME/.ardoursync.cfg"
+config_file="$session/ardoursync.cfg"
+
+if [ -r "$config_file_global" ]; then
+    source "$config_file_global"
+fi
+if [ -r "$config_file" ]; then
+    source "$config_file"
+fi
+
+if [ -z "$REMOTE_HOST" -o -z "$REMOTE_USER" ]; then
+    1>&2 echo -e "Set \$REMOTE_USER and \$REMOTE_HOST environment variable or configure them in\n$config_file"
+    exit 1
+fi
+
+if [ -n "$REMOTE_DIR" ]; then
+    REMOTE_DIR="${REMOTE_DIR}/"
+fi
+
+
+# vars
+interchange_dir="$session_name/interchange"
+rsync=rsync
+rsync_opts="--archive --verbose --compress --relative --progress"
+
+# fail on errors
+set -ex
+
+# perform actions
+if [ $gitinit = 1 ]; then
+    if is_git; then
+        1>&2 echo "Already a git repo"
+        exit 1
+    fi
+    git_init
+    git_add_files
+    git commit -m"Nova session $session_name"
+    ssh $REMOTE_USER@$REMOTE_HOST 'mkdir -p "'${REMOTE_DIR}${session_name}'" && git --git-dir="'${REMOTE_DIR}${session_name}/.git'" init --bare'
+fi
+
+if [ $upload = 1 ]; then
+    if [ "$syncaudiofiles" = 1 ]; then
+        push_audio_files
+    fi
+    git push -u
+
+elif [ $download = 1 ]; then
+    if [ "$syncaudiofiles" = 1 ]; then
+        pull_audio_files
+    fi
+    git pull
+
+elif [ $delete = 1 ]; then
+    delete_files
+
+fi
+
+set +ex
