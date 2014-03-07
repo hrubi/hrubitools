@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Script to sync ardour files over rsync+git
+
 PROG_NAME="$(basename $0)"
 
 usage() {
@@ -8,9 +10,18 @@ usage: $PROG_NAME [-h]              # help
                   [-s session]      # session directory
                   [-u]              # upload
                   [-d]              # download
-                  [-X]              # delete
                   [-g]              # init git and add git files
                   [-w]              # sync audiofiles too
+
+
+workflow:
+  1. Create ardour session
+  2. Set REMOTE_USER and REMOTE_HOST in ~/.ardoursync.cfg or
+     \$session/ardoursync.cfg
+  3. cd to \$session
+  4. Run ardoursync -guw (init and push all files)
+  5. Upload: ardoursync -u (optionally -w for audio files)
+  6. Download: ardoursync -d (optionally -w for audio files)
 EOF
 }
 
