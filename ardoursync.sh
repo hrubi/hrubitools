@@ -102,7 +102,7 @@ EOF
 
 git_add_files() {
     files=".gitignore ardoursync.cfg *.ardour *.history instant.xml plugins"
-    git add $files
+    git add --ignore-missing $files
 }
 
 
