@@ -1,0 +1,30 @@
+input_on() {
+    xinput --enable "$DEVICE"
+}
+
+input_off() {
+    xinput --disable "$DEVICE"
+}
+
+switchinput() {
+    DEVICE="$1"
+    OPTION="$2"
+
+    case "$OPTION" in
+        on)
+            input_on
+            ;;
+        off)
+            input_off
+            ;;
+        *)
+            ENABLED=`xinput --list-props "$DEVICE" | sed -n -e 's/^\s*Device Enabled.*:\s*\(.*\)\s*$/\1/p'`
+            if [ "$ENABLED" -eq 0 ]; then
+                input_on
+            elif [ "$ENABLED" -eq 1 ]; then
+                input_off
+            fi
+    esac
+}
+
+# vi: set ft=sh

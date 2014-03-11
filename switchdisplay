@@ -1,0 +1,10 @@
+#!/bin/sh
+
+profiledir="$HOME/.screenlayout"
+profile="$1"
+
+[ -z "$profile" ] && exit 1
+
+profilescript="$profiledir/${1}.sh"
+[ -x "$profilescript" ] || exit 1
+$profilescript

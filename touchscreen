@@ -1,0 +1,8 @@
+#!/bin/sh
+
+DEVICE="eGalax Inc. eGalaxTouch EXC7903-66v03_T1"
+OPTION="$1"
+
+source "$(dirname $(readlink -f $0))/switchinput"
+
+switchinput "$DEVICE" "$OPTION"

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+DEVICE="SynPS/2 Synaptics TouchPad"
+OPTION="$1"
+
+source "$(dirname $(readlink -f $0))/switchinput"
+
+switchinput "$DEVICE" "$OPTION"
