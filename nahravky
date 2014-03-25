@@ -16,7 +16,6 @@ mp3dir=$exportdir/$artist-$date
 mp3dirname=$(basename "$mp3dir")
 
 lame=`which lame`
-eyeD3=`which eyeD3`
 
 die() {
     echo $@ >&2
@@ -29,14 +28,7 @@ check_lame() {
     fi
 }
 
-check_eyeD3() {
-    if [ -z "$eyeD3" ]; then
-        die "'eyeD3' is not installed"
-    fi
-}
-
 check_lame
-check_eyeD3
 
 
 echo exportdir: $exportdir
