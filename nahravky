@@ -59,11 +59,11 @@ for wav in *.wav;do
     echo "converting $wav to $mp3: track $track title $title artist $artist year $year album $album"
 
     $lame \
-        -ta "$artist" \
-        -tl "$album" \
-        -tt "$title" \
-        -tn "$track/$totaltracks" \
-        -ty "$year" \
+        --ta "$artist" \
+        --tl "$album" \
+        --tt "$title" \
+        --tn "$track/$totaltracks" \
+        --ty "$year" \
         "$wav" "$mp3" || die "Error converting to mp3"
 
     mv -v "$mp3" "$mp3dir" || die "Error moving file"
